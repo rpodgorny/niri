@@ -22,6 +22,7 @@ pub struct Binds(pub Vec<Bind>);
 pub struct Bind {
     pub key: Key,
     pub action: Action,
+    pub on_release: bool,
     pub repeat: bool,
     pub cooldown: Option<Duration>,
     pub allow_when_locked: bool,
@@ -779,7 +780,7 @@ where
                     ctx.emit_error(e);
                 }
                 Ok(bind) => {
-                    if seen_keys.insert(bind.key) {
+                    if seen_keys.insert((bind.key, bind.on_release)) {
                         binds.push(bind);
                     } else {
                         // ideally, this error should point to the previous instance of this keybind
@@ -850,6 +851,7 @@ where
             .parse::<Key>()
             .map_err(|e| DecodeError::conversion(&node.node_name, e.wrap_err("invalid keybind")))?;
 
+        let mut on_release = false;
         let mut repeat = true;
         let mut cooldown = None;
         let mut allow_when_locked = false;
@@ -858,6 +860,9 @@ where
         let mut hotkey_overlay_title = None;
         for (name, val) in &node.properties {
             match &***name {
+                "on-release" => {
+                    on_release = knuffel::traits::DecodeScalar::decode(val, ctx)?;
+                }
                 "repeat" => {
                     repeat = knuffel::traits::DecodeScalar::decode(val, ctx)?;
                 }
@@ -893,6 +898,7 @@ where
         // even if their contents are not valid.
         let dummy = Self {
             key,
+            on_release: false,
             action: Action::Spawn(vec![]),
             repeat: true,
             cooldown: None,
@@ -930,6 +936,7 @@ where
                     Ok(Self {
                         key,
                         action,
+                        on_release,
                         repeat,
                         cooldown,
                         allow_when_locked,

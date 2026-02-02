@@ -1839,6 +1839,7 @@ fn make_preset_opened_binds() -> Vec<Bind> {
                 modifiers: Modifiers::empty(),
             },
             action,
+            on_release: false,
             repeat: true,
             cooldown: None,
             allow_when_locked: false,

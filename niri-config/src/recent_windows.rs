@@ -148,6 +148,7 @@ impl From<MruBind> for Bind {
     fn from(x: MruBind) -> Self {
         Self {
             key: x.key,
+            on_release: false,
             action: Action::from(x.action),
             repeat: true,
             cooldown: None,

@@ -81,6 +81,20 @@ binds {
 
 This is mostly useful for the scroll bindings.
 
+### Bind to press or release
+
+By default, binds trigger on key press.
+You can change this with the `on-release` property:
+
+```kdl
+binds {
+    Mod+X { spawn "notify-send" "Pressed"; }
+    Mod+X on-release=true { spawn "notify-send" "Released"; }
+}
+```
+
+`repeat=true` has no effect for release binds.
+
 ### Scroll Bindings
 
 You can bind mouse wheel scroll ticks using the following syntax.

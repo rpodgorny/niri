@@ -574,17 +574,15 @@ impl State {
             return;
         };
 
-        if !pressed {
-            return;
+        self.handle_bind(bind.clone(), pressed);
+
+        if pressed {
+            self.start_key_repeat(bind);
         }
-
-        self.handle_bind(bind.clone());
-
-        self.start_key_repeat(bind);
     }
 
     fn start_key_repeat(&mut self, bind: Bind) {
-        if !bind.repeat {
+        if !bind.repeat || bind.on_release {
             return;
         }
 
@@ -609,7 +607,7 @@ impl State {
             .niri
             .event_loop
             .insert_source(repeat_timer, move |_, _, state| {
-                state.handle_bind(bind.clone());
+                state.handle_bind(bind.clone(), true);
                 TimeoutAction::ToDuration(repeat_duration)
             })
             .unwrap();
@@ -639,7 +637,11 @@ impl State {
         self.niri.queue_redraw_all();
     }
 
-    pub fn handle_bind(&mut self, bind: Bind) {
+    pub fn handle_bind(&mut self, bind: Bind, pressed: bool) {
+        if bind.on_release && pressed {
+            return;
+        }
+
         let Some(cooldown) = bind.cooldown else {
             self.do_action(bind.action, bind.allow_when_locked);
             return;
@@ -2764,6 +2766,7 @@ impl State {
         let serial = SERIAL_COUNTER.next_serial();
 
         let button = event.button();
+        let pressed = event.state() == ButtonState::Pressed;
 
         let button_code = event.button_code();
 
@@ -2815,10 +2818,10 @@ impl State {
                     let config = self.niri.config.borrow();
                     let bindings =
                         make_binds_iter(&config, &mut self.niri.window_mru_ui, modifiers);
-                    find_configured_bind(bindings, mod_key, trigger, mods)
+                    find_configured_bind(bindings, mod_key, trigger, mods, true)
                 }) {
                     self.niri.suppressed_buttons.insert(button_code);
-                    self.handle_bind(bind.clone());
+                    self.handle_bind(bind.clone(), pressed);
                     return;
                 };
             }
@@ -3143,6 +3146,7 @@ impl State {
                                     modifiers: Modifiers::empty(),
                                 },
                                 action: Action::FocusColumnLeftUnderMouse,
+                                on_release: false,
                                 repeat: true,
                                 cooldown: None,
                                 allow_when_locked: false,
@@ -3155,6 +3159,7 @@ impl State {
                                     modifiers: Modifiers::empty(),
                                 },
                                 action: Action::FocusColumnRightUnderMouse,
+                                on_release: false,
                                 repeat: true,
                                 cooldown: None,
                                 allow_when_locked: false,
@@ -3171,24 +3176,26 @@ impl State {
                                 mod_key,
                                 Trigger::WheelScrollLeft,
                                 mods,
+                                true,
                             );
                             let bind_right = find_configured_bind(
                                 bindings,
                                 mod_key,
                                 Trigger::WheelScrollRight,
                                 mods,
+                                true,
                             );
                             (bind_left, bind_right)
                         };
 
                     if let Some(right) = bind_right {
                         for _ in 0..ticks {
-                            self.handle_bind(right.clone());
+                            self.handle_bind(right.clone(), true);
                         }
                     }
                     if let Some(left) = bind_left {
                         for _ in ticks..0 {
-                            self.handle_bind(left.clone());
+                            self.handle_bind(left.clone(), true);
                         }
                     }
                 }
@@ -3204,6 +3211,7 @@ impl State {
                                 modifiers: Modifiers::empty(),
                             },
                             action: Action::FocusWorkspaceUpUnderMouse,
+                            on_release: false,
                             repeat: true,
                             cooldown: Some(Duration::from_millis(50)),
                             allow_when_locked: false,
@@ -3216,6 +3224,7 @@ impl State {
                                 modifiers: Modifiers::empty(),
                             },
                             action: Action::FocusWorkspaceDownUnderMouse,
+                            on_release: false,
                             repeat: true,
                             cooldown: Some(Duration::from_millis(50)),
                             allow_when_locked: false,
@@ -3230,6 +3239,7 @@ impl State {
                                 modifiers: Modifiers::empty(),
                             },
                             action: Action::FocusColumnLeftUnderMouse,
+                            on_release: false,
                             repeat: true,
                             cooldown: Some(Duration::from_millis(50)),
                             allow_when_locked: false,
@@ -3242,6 +3252,7 @@ impl State {
                                 modifiers: Modifiers::empty(),
                             },
                             action: Action::FocusColumnRightUnderMouse,
+                            on_release: false,
                             repeat: true,
                             cooldown: Some(Duration::from_millis(50)),
                             allow_when_locked: false,
@@ -3258,20 +3269,21 @@ impl State {
                             mod_key,
                             Trigger::WheelScrollUp,
                             mods,
+                            true,
                         );
                         let bind_down =
-                            find_configured_bind(bindings, mod_key, Trigger::WheelScrollDown, mods);
+                            find_configured_bind(bindings, mod_key, Trigger::WheelScrollDown, mods, true);
                         (bind_up, bind_down)
                     };
 
                     if let Some(down) = bind_down {
                         for _ in 0..ticks {
-                            self.handle_bind(down.clone());
+                            self.handle_bind(down.clone(), true);
                         }
                     }
                     if let Some(up) = bind_up {
                         for _ in ticks..0 {
-                            self.handle_bind(up.clone());
+                            self.handle_bind(up.clone(), true);
                         }
                     }
                 }
@@ -3403,19 +3415,20 @@ impl State {
                         mod_key,
                         Trigger::TouchpadScrollLeft,
                         mods,
+                        true,
                     );
                     let bind_right =
-                        find_configured_bind(bindings, mod_key, Trigger::TouchpadScrollRight, mods);
+                        find_configured_bind(bindings, mod_key, Trigger::TouchpadScrollRight, mods, true);
                     drop(config);
 
                     if let Some(right) = bind_right {
                         for _ in 0..ticks {
-                            self.handle_bind(right.clone());
+                            self.handle_bind(right.clone(), true);
                         }
                     }
                     if let Some(left) = bind_left {
                         for _ in ticks..0 {
-                            self.handle_bind(left.clone());
+                            self.handle_bind(left.clone(), true);
                         }
                     }
                 }
@@ -3433,19 +3446,20 @@ impl State {
                         mod_key,
                         Trigger::TouchpadScrollUp,
                         mods,
+                        true,
                     );
                     let bind_down =
-                        find_configured_bind(bindings, mod_key, Trigger::TouchpadScrollDown, mods);
+                        find_configured_bind(bindings, mod_key, Trigger::TouchpadScrollDown, mods, true);
                     drop(config);
 
                     if let Some(down) = bind_down {
                         for _ in 0..ticks {
-                            self.handle_bind(down.clone());
+                            self.handle_bind(down.clone(), true);
                         }
                     }
                     if let Some(up) = bind_up {
                         for _ in ticks..0 {
-                            self.handle_bind(up.clone());
+                            self.handle_bind(up.clone(), true);
                         }
                     }
                 }
@@ -4341,12 +4355,8 @@ fn should_intercept_key<'a>(
     disable_power_key_handling: bool,
     is_inhibiting_shortcuts: bool,
 ) -> FilterResult<Option<Bind>> {
-    // Actions are only triggered on presses, release of the key
-    // shouldn't try to intercept anything unless we have marked
-    // the key to suppress.
-    if !pressed && !suppressed_keys.contains(&key_code) {
-        return FilterResult::Forward;
-    }
+    // Actions are triggered on presses, and on releases for binds with on_release=true.
+    // For releases, we should intercept if there's an on_release bind or if the key was suppressed.
 
     let mut final_bind = find_bind(
         bindings,
@@ -4354,8 +4364,16 @@ fn should_intercept_key<'a>(
         modified,
         raw,
         mods,
+        pressed,
         disable_power_key_handling,
     );
+
+    // For key releases that weren't suppressed on press, only proceed if there's an on_release bind
+    if !pressed && !suppressed_keys.contains(&key_code) {
+        if final_bind.is_none() || !final_bind.as_ref().unwrap().on_release {
+            return FilterResult::Forward;
+        }
+    }
 
     // Allow only a subset of compositor actions while the screenshot UI is open, since the user
     // cannot see the screen.
@@ -4377,6 +4395,7 @@ fn should_intercept_key<'a>(
                         modifiers: Modifiers::empty(),
                     },
                     action,
+                    on_release: false,
                     repeat: true,
                     cooldown: None,
                     allow_when_locked: false,
@@ -4399,12 +4418,23 @@ fn should_intercept_key<'a>(
                 FilterResult::Intercept(Some(bind))
             }
         }
-        (_, false) => {
+        (Some(bind), false) => {
+            // Key release with a bind (on_release=true)
             // By this point, we know that the key was suppressed on press. Even if we're inhibiting
             // shortcuts, we should still suppress the release.
             // But we don't need to check for shortcuts inhibition here, because
             // if it was inhibited on press (forwarded to the client), it wouldn't be suppressed,
             // so the release would already have been forwarded at the start of this function.
+            if is_inhibiting_shortcuts && bind.allow_inhibiting {
+                suppressed_keys.remove(&key_code);
+                FilterResult::Forward
+            } else {
+                suppressed_keys.remove(&key_code);
+                FilterResult::Intercept(Some(bind))
+            }
+        }
+        (None, false) => {
+            // Key release without a bind, but was suppressed on press
             suppressed_keys.remove(&key_code);
             FilterResult::Intercept(None)
         }
@@ -4418,6 +4448,7 @@ fn find_bind<'a>(
     modified: Keysym,
     raw: Option<Keysym>,
     mods: ModifiersState,
+    pressed: bool,
     disable_power_key_handling: bool,
 ) -> Option<Bind> {
     use keysyms::*;
@@ -4441,6 +4472,7 @@ fn find_bind<'a>(
                 modifiers: Modifiers::empty(),
             },
             action,
+            on_release: false,
             repeat: true,
             cooldown: None,
             allow_when_locked: false,
@@ -4455,7 +4487,7 @@ fn find_bind<'a>(
     }
 
     let trigger = Trigger::Keysym(raw?);
-    find_configured_bind(bindings, mod_key, trigger, mods)
+    find_configured_bind(bindings, mod_key, trigger, mods, pressed)
 }
 
 fn find_configured_bind<'a>(
@@ -4463,6 +4495,7 @@ fn find_configured_bind<'a>(
     mod_key: ModKey,
     trigger: Trigger,
     mods: ModifiersState,
+    pressed: bool,
 ) -> Option<Bind> {
     // Handle configured binds.
     let mut modifiers = modifiers_from_state(mods);
@@ -4474,6 +4507,12 @@ fn find_configured_bind<'a>(
 
     for bind in bindings {
         if bind.key.trigger != trigger {
+            continue;
+        }
+
+        // Filter by on_release flag: skip on_release bindings during press,
+        // and skip press bindings during release.
+        if bind.on_release == pressed {
             continue;
         }
 
@@ -4681,6 +4720,7 @@ fn hardcoded_overview_bind(raw: Keysym, mods: ModifiersState) -> Option<Bind> {
             modifiers: Modifiers::empty(),
         },
         action,
+        on_release: false,
         repeat,
         cooldown: None,
         allow_when_locked: false,
@@ -5098,6 +5138,7 @@ mod tests {
                 modifiers: Modifiers::COMPOSITOR | Modifiers::CTRL,
             },
             action: Action::CloseWindow,
+            on_release: false,
             repeat: true,
             cooldown: None,
             allow_when_locked: false,
@@ -5284,6 +5325,7 @@ mod tests {
                     modifiers: Modifiers::COMPOSITOR,
                 },
                 action: Action::CloseWindow,
+                on_release: false,
                 repeat: true,
                 cooldown: None,
                 allow_when_locked: false,
@@ -5296,6 +5338,7 @@ mod tests {
                     modifiers: Modifiers::SUPER,
                 },
                 action: Action::FocusColumnLeft,
+                on_release: false,
                 repeat: true,
                 cooldown: None,
                 allow_when_locked: false,
@@ -5308,6 +5351,7 @@ mod tests {
                     modifiers: Modifiers::empty(),
                 },
                 action: Action::FocusWindowDown,
+                on_release: false,
                 repeat: true,
                 cooldown: None,
                 allow_when_locked: false,
@@ -5320,6 +5364,7 @@ mod tests {
                     modifiers: Modifiers::COMPOSITOR | Modifiers::SUPER,
                 },
                 action: Action::FocusWindowUp,
+                on_release: false,
                 repeat: true,
                 cooldown: None,
                 allow_when_locked: false,
@@ -5332,6 +5377,7 @@ mod tests {
                     modifiers: Modifiers::SUPER | Modifiers::ALT,
                 },
                 action: Action::FocusColumnRight,
+                on_release: false,
                 repeat: true,
                 cooldown: None,
                 allow_when_locked: false,
@@ -5348,7 +5394,8 @@ mod tests {
                 ModifiersState {
                     logo: true,
                     ..Default::default()
-                }
+                },
+                true,
             )
             .as_ref(),
             Some(&bindings.0[0])
@@ -5359,6 +5406,7 @@ mod tests {
                 ModKey::Super,
                 Trigger::Keysym(Keysym::q),
                 ModifiersState::default(),
+                true,
             ),
             None,
         );
@@ -5371,7 +5419,8 @@ mod tests {
                 ModifiersState {
                     logo: true,
                     ..Default::default()
-                }
+                },
+                true,
             )
             .as_ref(),
             Some(&bindings.0[1])
@@ -5382,6 +5431,7 @@ mod tests {
                 ModKey::Super,
                 Trigger::Keysym(Keysym::h),
                 ModifiersState::default(),
+                true,
             ),
             None,
         );
@@ -5394,7 +5444,8 @@ mod tests {
                 ModifiersState {
                     logo: true,
                     ..Default::default()
-                }
+                },
+                true,
             ),
             None,
         );
@@ -5404,6 +5455,7 @@ mod tests {
                 ModKey::Super,
                 Trigger::Keysym(Keysym::j),
                 ModifiersState::default(),
+                true,
             )
             .as_ref(),
             Some(&bindings.0[2])
@@ -5417,7 +5469,8 @@ mod tests {
                 ModifiersState {
                     logo: true,
                     ..Default::default()
-                }
+                },
+                true,
             )
             .as_ref(),
             Some(&bindings.0[3])
@@ -5428,6 +5481,7 @@ mod tests {
                 ModKey::Super,
                 Trigger::Keysym(Keysym::k),
                 ModifiersState::default(),
+                true,
             ),
             None,
         );
@@ -5441,7 +5495,8 @@ mod tests {
                     logo: true,
                     alt: true,
                     ..Default::default()
-                }
+                },
+                true,
             )
             .as_ref(),
             Some(&bindings.0[4])
@@ -5455,6 +5510,7 @@ mod tests {
                     logo: true,
                     ..Default::default()
                 },
+                true,
             ),
             None,
         );
