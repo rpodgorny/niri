@@ -180,6 +180,8 @@ pub enum Action {
     FocusWindowUpOrColumnRight,
     FocusWindowOrWorkspaceDown,
     FocusWindowOrWorkspaceUp,
+    FocusWindowOrWorkspaceDownOrFirst,
+    FocusWindowOrWorkspaceUpOrLast,
     FocusWindowTop,
     FocusWindowBottom,
     FocusWindowDownOrTop,
@@ -195,6 +197,8 @@ pub enum Action {
     MoveWindowUp,
     MoveWindowDownOrToWorkspaceDown,
     MoveWindowUpOrToWorkspaceUp,
+    MoveWindowDownOrToWorkspaceDownOrFirst,
+    MoveWindowUpOrToWorkspaceUpOrLast,
     ConsumeOrExpelWindowLeft,
     #[knuffel(skip)]
     ConsumeOrExpelWindowLeftById(u64),
@@ -462,6 +466,12 @@ impl From<niri_ipc::Action> for Action {
             niri_ipc::Action::FocusWindowUpOrColumnRight {} => Self::FocusWindowUpOrColumnRight,
             niri_ipc::Action::FocusWindowOrWorkspaceDown {} => Self::FocusWindowOrWorkspaceDown,
             niri_ipc::Action::FocusWindowOrWorkspaceUp {} => Self::FocusWindowOrWorkspaceUp,
+            niri_ipc::Action::FocusWindowOrWorkspaceDownOrFirst {} => {
+                Self::FocusWindowOrWorkspaceDownOrFirst
+            }
+            niri_ipc::Action::FocusWindowOrWorkspaceUpOrLast {} => {
+                Self::FocusWindowOrWorkspaceUpOrLast
+            }
             niri_ipc::Action::FocusWindowTop {} => Self::FocusWindowTop,
             niri_ipc::Action::FocusWindowBottom {} => Self::FocusWindowBottom,
             niri_ipc::Action::FocusWindowDownOrTop {} => Self::FocusWindowDownOrTop,
@@ -483,6 +493,12 @@ impl From<niri_ipc::Action> for Action {
                 Self::MoveWindowDownOrToWorkspaceDown
             }
             niri_ipc::Action::MoveWindowUpOrToWorkspaceUp {} => Self::MoveWindowUpOrToWorkspaceUp,
+            niri_ipc::Action::MoveWindowDownOrToWorkspaceDownOrFirst {} => {
+                Self::MoveWindowDownOrToWorkspaceDownOrFirst
+            }
+            niri_ipc::Action::MoveWindowUpOrToWorkspaceUpOrLast {} => {
+                Self::MoveWindowUpOrToWorkspaceUpOrLast
+            }
             niri_ipc::Action::ConsumeOrExpelWindowLeft { id: None } => {
                 Self::ConsumeOrExpelWindowLeft
             }

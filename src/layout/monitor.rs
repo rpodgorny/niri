@@ -769,6 +769,18 @@ impl<W: LayoutElement> Monitor<W> {
         }
     }
 
+    pub fn move_down_or_to_workspace_down_or_first(&mut self) {
+        if !self.active_workspace().move_down() {
+            self.move_to_workspace_down_or_first(true);
+        }
+    }
+
+    pub fn move_up_or_to_workspace_up_or_last(&mut self) {
+        if !self.active_workspace().move_up() {
+            self.move_to_workspace_up_or_last(true);
+        }
+    }
+
     pub fn focus_window_or_workspace_down(&mut self) {
         if !self.active_workspace().focus_down() {
             self.switch_workspace_down();
@@ -778,6 +790,18 @@ impl<W: LayoutElement> Monitor<W> {
     pub fn focus_window_or_workspace_up(&mut self) {
         if !self.active_workspace().focus_up() {
             self.switch_workspace_up();
+        }
+    }
+
+    pub fn focus_window_or_workspace_down_or_first(&mut self) {
+        if !self.active_workspace().focus_down() {
+            self.switch_workspace_down_or_first();
+        }
+    }
+
+    pub fn focus_window_or_workspace_up_or_last(&mut self) {
+        if !self.active_workspace().focus_up() {
+            self.switch_workspace_up_or_last();
         }
     }
 
@@ -821,6 +845,84 @@ impl<W: LayoutElement> Monitor<W> {
         let new_idx = min(source_workspace_idx + 1, self.workspaces.len() - 1);
         if new_idx == source_workspace_idx {
             return;
+        }
+        let new_id = self.workspaces[new_idx].id();
+
+        let workspace = &mut self.workspaces[source_workspace_idx];
+        let Some(removed) = workspace.remove_active_tile(Transaction::new()) else {
+            return;
+        };
+
+        let activate = if focus {
+            ActivateWindow::Yes
+        } else {
+            ActivateWindow::Smart
+        };
+
+        self.add_tile(
+            removed.tile,
+            MonitorAddWindowTarget::Workspace {
+                id: new_id,
+                column_idx: None,
+            },
+            activate,
+            true,
+            removed.width,
+            removed.is_full_width,
+            removed.is_floating,
+        );
+    }
+
+    pub fn move_to_workspace_down_or_first(&mut self, focus: bool) {
+        let source_workspace_idx = self.active_workspace_idx;
+
+        let new_idx = if source_workspace_idx + 1 >= self.workspaces.len() {
+            0 // wrap to first
+        } else {
+            source_workspace_idx + 1
+        };
+
+        if new_idx == source_workspace_idx {
+            return; // Single workspace - no-op
+        }
+        let new_id = self.workspaces[new_idx].id();
+
+        let workspace = &mut self.workspaces[source_workspace_idx];
+        let Some(removed) = workspace.remove_active_tile(Transaction::new()) else {
+            return;
+        };
+
+        let activate = if focus {
+            ActivateWindow::Yes
+        } else {
+            ActivateWindow::Smart
+        };
+
+        self.add_tile(
+            removed.tile,
+            MonitorAddWindowTarget::Workspace {
+                id: new_id,
+                column_idx: None,
+            },
+            activate,
+            true,
+            removed.width,
+            removed.is_full_width,
+            removed.is_floating,
+        );
+    }
+
+    pub fn move_to_workspace_up_or_last(&mut self, focus: bool) {
+        let source_workspace_idx = self.active_workspace_idx;
+
+        let new_idx = if source_workspace_idx == 0 {
+            self.workspaces.len() - 1 // wrap to last
+        } else {
+            source_workspace_idx - 1
+        };
+
+        if new_idx == source_workspace_idx {
+            return; // Single workspace - no-op
         }
         let new_id = self.workspaces[new_idx].id();
 

@@ -1028,6 +1028,26 @@ impl State {
                 // FIXME: granular
                 self.niri.queue_redraw_all();
             }
+            Action::MoveWindowDownOrToWorkspaceDownOrFirst => {
+                if self.niri.screenshot_ui.is_open() {
+                    self.niri.screenshot_ui.move_down();
+                } else {
+                    self.niri.layout.move_down_or_to_workspace_down_or_first();
+                    self.maybe_warp_cursor_to_focus();
+                }
+                // FIXME: granular
+                self.niri.queue_redraw_all();
+            }
+            Action::MoveWindowUpOrToWorkspaceUpOrLast => {
+                if self.niri.screenshot_ui.is_open() {
+                    self.niri.screenshot_ui.move_up();
+                } else {
+                    self.niri.layout.move_up_or_to_workspace_up_or_last();
+                    self.maybe_warp_cursor_to_focus();
+                }
+                // FIXME: granular
+                self.niri.queue_redraw_all();
+            }
             Action::ConsumeOrExpelWindowLeft => {
                 self.niri.layout.consume_or_expel_window_left(None);
                 self.maybe_warp_cursor_to_focus();
@@ -1260,6 +1280,20 @@ impl State {
             }
             Action::FocusWindowOrWorkspaceUp => {
                 self.niri.layout.focus_window_or_workspace_up();
+                self.maybe_warp_cursor_to_focus();
+                self.niri.layer_shell_on_demand_focus = None;
+                // FIXME: granular
+                self.niri.queue_redraw_all();
+            }
+            Action::FocusWindowOrWorkspaceDownOrFirst => {
+                self.niri.layout.focus_window_or_workspace_down_or_first();
+                self.maybe_warp_cursor_to_focus();
+                self.niri.layer_shell_on_demand_focus = None;
+                // FIXME: granular
+                self.niri.queue_redraw_all();
+            }
+            Action::FocusWindowOrWorkspaceUpOrLast => {
+                self.niri.layout.focus_window_or_workspace_up_or_last();
                 self.maybe_warp_cursor_to_focus();
                 self.niri.layer_shell_on_demand_focus = None;
                 // FIXME: granular
@@ -4648,6 +4682,8 @@ fn allowed_during_screenshot(action: &Action) -> bool {
             | Action::MoveWindowUpOrToWorkspaceUp
             | Action::MoveWindowDown
             | Action::MoveWindowDownOrToWorkspaceDown
+            | Action::MoveWindowDownOrToWorkspaceDownOrFirst
+            | Action::MoveWindowUpOrToWorkspaceUpOrLast
             | Action::MoveColumnToMonitorLeft
             | Action::MoveColumnToMonitorRight
             | Action::MoveColumnToMonitorUp

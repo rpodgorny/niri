@@ -378,6 +378,10 @@ pub enum Action {
     FocusWindowOrWorkspaceDown {},
     /// Focus the window or the workspace above.
     FocusWindowOrWorkspaceUp {},
+    /// Focus the window or the workspace below, wrapping to first workspace if at the last.
+    FocusWindowOrWorkspaceDownOrFirst {},
+    /// Focus the window or the workspace above, wrapping to last workspace if at the first.
+    FocusWindowOrWorkspaceUpOrLast {},
     /// Focus the topmost window.
     FocusWindowTop {},
     /// Focus the bottommost window.
@@ -414,6 +418,12 @@ pub enum Action {
     MoveWindowDownOrToWorkspaceDown {},
     /// Move the focused window up in a column or to the workspace above.
     MoveWindowUpOrToWorkspaceUp {},
+    /// Move the focused window down in a column or to the workspace below, wrapping to first
+    /// workspace if at the last.
+    MoveWindowDownOrToWorkspaceDownOrFirst {},
+    /// Move the focused window up in a column or to the workspace above, wrapping to last
+    /// workspace if at the first.
+    MoveWindowUpOrToWorkspaceUpOrLast {},
     /// Consume or expel a window left.
     #[cfg_attr(
         feature = "clap",

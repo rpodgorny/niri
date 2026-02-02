@@ -1830,6 +1830,20 @@ impl<W: LayoutElement> Layout<W> {
         monitor.move_up_or_to_workspace_up();
     }
 
+    pub fn move_down_or_to_workspace_down_or_first(&mut self) {
+        let Some(monitor) = self.active_monitor() else {
+            return;
+        };
+        monitor.move_down_or_to_workspace_down_or_first();
+    }
+
+    pub fn move_up_or_to_workspace_up_or_last(&mut self) {
+        let Some(monitor) = self.active_monitor() else {
+            return;
+        };
+        monitor.move_up_or_to_workspace_up_or_last();
+    }
+
     pub fn consume_or_expel_window_left(&mut self, window: Option<&W::Id>) {
         if let Some(InteractiveMoveState::Moving(move_)) = &mut self.interactive_move {
             if window.is_none() || window == Some(move_.tile.window().id()) {
@@ -2030,6 +2044,20 @@ impl<W: LayoutElement> Layout<W> {
             return;
         };
         monitor.focus_window_or_workspace_up();
+    }
+
+    pub fn focus_window_or_workspace_down_or_first(&mut self) {
+        let Some(monitor) = self.active_monitor() else {
+            return;
+        };
+        monitor.focus_window_or_workspace_down_or_first();
+    }
+
+    pub fn focus_window_or_workspace_up_or_last(&mut self) {
+        let Some(monitor) = self.active_monitor() else {
+            return;
+        };
+        monitor.focus_window_or_workspace_up_or_last();
     }
 
     pub fn focus_window_top(&mut self) {
